@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="page-title">Cargando...</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        img.product-image {
+            max-width: 100px;
+            max-height: 100px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Comparador de Precios</h1>
+    <div id="loading" class="loading">Cargando datos...</div>
+    <table id="products-table" style="display: none;">
+        <thead>
+            <tr>
+                <th>Producto</th>
+                <th>Precio Base</th>
+                <th>Precio Actual</th>
+                <th>Descuento</th>
+                <th>Imagen</th>
+                <th>Tienda</th>
+                <th>Link</th>
+            </tr>
+        </thead>
+        <tbody id="products-body"></tbody>
+    </table>
+
+    <script>
+        // Configuración de productos y selectores por tienda
+        const productos = [
+            {
+                url: "https://www.contimarket.com/tablet_xiaomi_redmi_pad_pro_8256gb_wi-fi_121#",
+                tienda: "ContiMarket",
+                selectores: {
+                    nombre: '.Marca',
+                    precioBase: '2.158.672',
+                    precioActual: '.PrecioContiGs',
+                    imagen: '.gallery img'
+                },
+            },
+            {
+                url: "https://www.contimarket.com/tablet-xiaomi-redmi-pad-2-11-8256gb-wifi",
+                tienda: "ContiMarket",
+                selectores: {
+                    nombre: '.Marca',
+                    precioBase: '1.619.000',
+                    precioActual: '.PrecioContiGs',
+                    imagen: '.gallery img'
+                },
+            },
+            {
+                url: "https://tiendanaranja.com.py/tablet-xiaomi-redmi-pad-pro-12-1-wifi-256gb-8-gb-graphite-gray.html",
+                tienda: "Tienda Naranja",
+                selectores: {
+                    nombre: 'h1.page-title span.base',
+                    precioBase: '2.331.761',
+                    precioActual: '.PrecioContiGs',
+                    imagen: '.gallery-placeholder img'
+                },
+            },
+            {
+                url: "https://www.shoppingchina.com.py/producto/tablet-xiaomi-pad-7-8gb-128gb-11-2-verde-985383",
+                tienda: "Shopping China",
+                selectores: {
+                    nombre: 'h3.text-uppercase',
+                    precioBase: '2.329.000',
+                    precioActual: 'h2.sc-text-primary.my-auto',
+                    imagen: '.product-image img'
+                },
+            },
+            {
+                url: "https://toptechnology.com.py/producto/tablet-xiaomi-redmi-pad-pro-12-1-256-gb-wi-fi/",
+                tienda: "Top Technology",
+                selectores: {
+                    nombre: 'h1.product_title.entry-title.wd-entities-title',
+                    precioBase: '2.250.000 Gs.',
+                    precioActual: '.single-product-wrapper.row span.woocommerce-Price-amount.amount',
+                    imagen: '.woocommerce-product-gallery img'
+                },
+            },
+            {
+                url: "https://www.compulandia.com.py/producto/tablet-xiaomi-redmi-pad-pro-121-wifi-256gb-8-gb-gris/",
+                tienda: "Compulandia",
+                selectores: {
+                    nombre: 'h1.product_title.entry-title',
+                    precioBase: '2.179.216',
+                    precioActual: '.single-product-wrapper.row span.woocommerce-Price-amount.amount',
+                    imagen: '.product-image img'
+                },
+            },
+            {
+                url: "https://www.puntofarma.com.py/producto/30958/femelle-drospirenona-3-mg-cont.-28-comprimidos-recubiertos",
+                tienda: "Puntofarma",
+                selectores: {
+                    nombre: '.card.border.shadow-sm.rounded-4.product-detail-v2.position-relative h1',
+                    precioBase: '90.700 - 63.490',
+                    precioActual: 'span.fs-5.fw-semibold',
+                    imagen: '.mobile.d-flex.justify-content-center img'
+                },
+            },
+            {
+                url: "https://www.puntofarma.com.py/producto/173975/drusa-28-drospirenona-3-mg-caja-de-28-comprimidos-recubiertos",
+                tienda: "Puntofarma",
+                selectores: {
+                    nombre: '.card.border.shadow-sm.rounded-4.product-detail-v2.position-relative h1',
+                    precioBase: '76.903 - 53.833',
+                    precioActual: 'span.fs-5.fw-semibold',
+                    imagen: '.mobile.d-flex.justify-content-center img'
+                },
+            },
+            {
+                url: "https://www.puntofarma.com.py/producto/183589/antitranspirante-aerosol-extreme-vorago-158-ml",
+                tienda: "Puntofarma",
+                selectores: {
+                    nombre: '.card.border.shadow-sm.rounded-4.product-detail-v2.position-relative h1',
+                    precioBase: '23.000 - 20.833',
+                    precioActual: 'span.fs-5.fw-semibold',
+                    imagen: '.mobile.d-flex.justify-content-center img'
+                },
+            }
+
+
+
+        ];
+
+        // Proxy CORS alternativo (puedes crear el tuyo o usar uno público)
+        const CORS_PROXY = "https://api.allorigins.win/get?url=";
+
+        // Función para limpiar y formatear precios
+        function cleanPrice(priceStr) {
+            if (!priceStr || priceStr === "N/A") return null;
+            const cleaned = priceStr.replace(/[^\d.,]/g, '').replace(',', '.');
+            return parseFloat(cleaned);
+        }
+
+        // Función para calcular el descuento
+        function calcularDescuento(base, actual) {
+            if (!base || !actual) return "N/A";
+            const descuento = ((base - actual) / base) * 100;
+            return `${descuento.toFixed(2)}%`;
+        }
+
+        // Función principal
+        async function cargarProductos() {
+            const productsBody = document.getElementById('products-body');
+            const loadingElement = document.getElementById('loading');
+            const tableElement = document.getElementById('products-table');
+            const titleElement = document.querySelector('title');
+
+            let firstProductName = null;
+
+            for (const producto of productos) {
+                try {
+                    // Usamos el proxy CORS
+                    const response = await fetch(`${CORS_PROXY}${encodeURIComponent(producto.url)}`);
+                    const data = await response.json();
+                    const html = data.contents;
+
+                    // Parseamos el HTML
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+
+                    // Extraemos los datos
+                    const nombre = doc.querySelector(producto.selectores.nombre)?.textContent?.trim() || "No encontrado";
+                    const precioBase = (producto.selectores.precioBase) || "N/A";
+                    const precioActual = doc.querySelector(producto.selectores.precioActual)?.textContent?.trim() || "N/A";
+                    const imagenSrc = doc.querySelector(producto.selectores.imagen)?.src || '';
+
+                    console.log({
+                        nombre,
+                        precioActual,
+                        imagenSrc
+                    });
+
+                    console.log(
+                        {
+                            nombre: (doc.querySelector(producto.selectores.nombre)) || "No encontrado",
+                            precioActual: (doc.querySelector(producto.selectores.precioActual)) || "N/A",
+                            imagenSrc: (doc.querySelector(producto.selectores.imagen)) || ''
+                        }
+                    )
+
+                    // Cambia el título al nombre del primer producto cargado
+                    if (!firstProductName && nombre && nombre !== "No encontrado") {
+                        firstProductName = nombre;
+                        titleElement.textContent = nombre + " | Comparador de Precios";
+                    }
+
+                    // Calculamos el descuento
+                    const baseNum = cleanPrice(precioBase);
+                    const actualNum = cleanPrice(precioActual);
+                    const descuento = calcularDescuento(baseNum, actualNum);
+
+                    // Creamos la fila de la tabla
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td style="text-transform: capitalize;">${nombre}</td>
+                        <td>${precioBase}</td>
+                        <td>${precioActual}</td>
+                        <td>${descuento}</td>
+                        <td>${imagenSrc ? `<img class="product-image" src="${imagenSrc}" alt="${nombre}">` : 'N/A'}</td>
+                        <td>${producto.tienda}</td>
+                        <td><a href="${producto.url}" target="_blank">Revisar</a></td>
+                    `;
+
+                    productsBody.appendChild(row);
+
+                } catch (error) {
+                    console.error(`Error con ${producto.url}:`, error);
+                    const row = document.createElement('tr');
+                    row.innerHTML = `<td colspan="6" class="error">Error al cargar: ${error}</td>
+                    <td><a href="${producto.url}" target="_blank">Revisar</a></td>`;
+                    productsBody.appendChild(row);
+                }
+            }
+
+            // Ocultamos el loading y mostramos la tabla
+            loadingElement.style.display = 'none';
+            tableElement.style.display = 'table';
+        }
+
+        // Iniciamos la carga cuando la página esté lista
+        document.addEventListener('DOMContentLoaded', cargarProductos);
+    </script>
+</body>
+
+</html>
