@@ -132,7 +132,7 @@
                 tienda: "Puntofarma",
                 selectores: {
                     nombre: '.card.border.shadow-sm.rounded-4.product-detail-v2.position-relative h1',
-                    precioBase: '90.700 - 63.490',
+                    precioBase: '63.490',
                     precioActual: 'span.fs-5.fw-semibold',
                     imagen: '.mobile.d-flex.justify-content-center img'
                 },
@@ -142,7 +142,7 @@
                 tienda: "Puntofarma",
                 selectores: {
                     nombre: '.card.border.shadow-sm.rounded-4.product-detail-v2.position-relative h1',
-                    precioBase: '76.903 - 53.833',
+                    precioBase: '53.833',
                     precioActual: 'span.fs-5.fw-semibold',
                     imagen: '.mobile.d-flex.justify-content-center img'
                 },
@@ -152,7 +152,7 @@
                 tienda: "Puntofarma",
                 selectores: {
                     nombre: '.card.border.shadow-sm.rounded-4.product-detail-v2.position-relative h1',
-                    precioBase: '23.000 - 20.833',
+                    precioBase: '20.833',
                     precioActual: 'span.fs-5.fw-semibold',
                     imagen: '.mobile.d-flex.justify-content-center img'
                 },
@@ -173,6 +173,20 @@
                 .replace(/(gs\.?|guaran[ií]es|Gs\.?)/gi, '')
                 .replace(/[^\d]/g, ''); // solo deja dígitos
             return cleaned ? parseInt(cleaned, 10) : null;
+        }
+
+        // Función para limpiar y normalizar URLs de imágenes
+        function cleanImageUrl(src) {
+            if (!src) return '';
+            // Si es un next/image, extrae el parámetro url
+            if (src.startsWith('file:///_next/image')) {
+                const urlMatch = src.match(/url=([^&]+)/);
+                if (urlMatch && urlMatch[1]) {
+                    // Decodifica la URL
+                    return decodeURIComponent(urlMatch[1]);
+                }
+            }
+            return src;
         }
 
         // Función para calcular el descuento
@@ -209,7 +223,8 @@
                     let precioActualRaw = doc.querySelector(producto.selectores.precioActual)?.textContent?.trim() || "N/A";
                     let precioActualNum = cleanPrice(precioActualRaw);
                     let precioActual = precioActualNum ? precioActualNum.toLocaleString('es-PY') : "N/A";
-                    const imagenSrc = doc.querySelector(producto.selectores.imagen)?.src || '';
+                    let imagenSrcRaw = doc.querySelector(producto.selectores.imagen)?.src || '';
+                    let imagenSrc = cleanImageUrl(imagenSrcRaw);
 
                     console.log({
                         nombre,
