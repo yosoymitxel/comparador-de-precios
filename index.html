@@ -165,11 +165,14 @@
         // Proxy CORS alternativo (puedes crear el tuyo o usar uno público)
         const CORS_PROXY = "https://api.allorigins.win/get?url=";
 
-        // Función para limpiar y formatear precios
+        // Función para limpiar y formatear precios (solo enteros, ignora decimales)
         function cleanPrice(priceStr) {
             if (!priceStr || priceStr === "N/A") return null;
-            const cleaned = priceStr.replace(/[^\d.,]/g, '').replace(',', '.');
-            return parseFloat(cleaned);
+            // Elimina texto como "gs", "Gs.", "guaraníes", espacios, puntos y comas
+            let cleaned = priceStr
+                .replace(/(gs\.?|guaran[ií]es|Gs\.?)/gi, '')
+                .replace(/[^\d]/g, ''); // solo deja dígitos
+            return cleaned ? parseInt(cleaned, 10) : null;
         }
 
         // Función para calcular el descuento
@@ -202,7 +205,10 @@
                     // Extraemos los datos
                     const nombre = doc.querySelector(producto.selectores.nombre)?.textContent?.trim() || "No encontrado";
                     const precioBase = (producto.selectores.precioBase) || "N/A";
-                    const precioActual = doc.querySelector(producto.selectores.precioActual)?.textContent?.trim() || "N/A";
+                    // Limpiar el precio actual antes de mostrarlo
+                    let precioActualRaw = doc.querySelector(producto.selectores.precioActual)?.textContent?.trim() || "N/A";
+                    let precioActualNum = cleanPrice(precioActualRaw);
+                    let precioActual = precioActualNum ? precioActualNum.toLocaleString('es-PY') : "N/A";
                     const imagenSrc = doc.querySelector(producto.selectores.imagen)?.src || '';
 
                     console.log({
@@ -219,16 +225,9 @@
                         }
                     )
 
-                    // Cambia el título al nombre del primer producto cargado
-                    if (!firstProductName && nombre && nombre !== "No encontrado") {
-                        firstProductName = nombre;
-                        titleElement.textContent = nombre + " | Comparador de Precios";
-                    }
-
                     // Calculamos el descuento
                     const baseNum = cleanPrice(precioBase);
-                    const actualNum = cleanPrice(precioActual);
-                    const descuento = calcularDescuento(baseNum, actualNum);
+                    const descuento = calcularDescuento(baseNum, precioActualNum);
 
                     // Creamos la fila de la tabla
                     const row = document.createElement('tr');
@@ -244,6 +243,12 @@
 
                     productsBody.appendChild(row);
 
+                    // Cambia el título al nombre del primer producto cargado
+                    if (!firstProductName && nombre && nombre !== "No encontrado") {
+                        // Ocultamos el loading y mostramos la tabla
+                        loadingElement.style.display = 'none';
+                        tableElement.style.display = 'table';
+                    }
                 } catch (error) {
                     console.error(`Error con ${producto.url}:`, error);
                     const row = document.createElement('tr');
@@ -253,9 +258,10 @@
                 }
             }
 
-            // Ocultamos el loading y mostramos la tabla
-            loadingElement.style.display = 'none';
-            tableElement.style.display = 'table';
+
+
+            // Cambia el título al nombre del primer producto cargado
+            titleElement.textContent = "Comparador de Precios";
         }
 
         // Iniciamos la carga cuando la página esté lista
