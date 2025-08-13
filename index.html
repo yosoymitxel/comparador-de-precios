@@ -179,7 +179,7 @@
         function cleanImageUrl(src) {
             if (!src) return '';
             // Si es un next/image, extrae el parámetro url
-            if (src.startsWith('file:///_next/image')) {
+            if (src.startsWith('file:///_next/image') || src.startsWith('https://yosoymitxel.github.io/_next/') ) {
                 const urlMatch = src.match(/url=([^&]+)/);
                 if (urlMatch && urlMatch[1]) {
                     // Decodifica la URL
